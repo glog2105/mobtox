@@ -3,49 +3,57 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 import 'package:hex/hex.dart';
 
-final DynamicLibrary _toxLib = _loadToxLibrary();
-
-DynamicLibrary _loadToxLibrary() {
+final DynamicLibrary _loadToxLib() {
   if (Platform.isAndroid) {
-    return DynamicLibrary.open('libtox.so');
+    try {
+      return DynamicLibrary.open('libtox.so');
+    } catch (e) {
+      throw Exception('Failed to load tox library: $e');
+    }
   } else if (Platform.isIOS) {
-    return DynamicLibrary.open('libtox.dylib');
+    return DynamicLibrary.process();
   }
   throw UnsupportedError('Platform not supported');
 }
 
+final toxLib = _loadToxLib();
+
 class ToxFFI {
-  late Pointer<Void> _toxPointer;
+  late Pointer<Void> _tox;
+  bool _isInitialized = false;
 
-  void initialize() {
-    _toxPointer = _toxLib.lookupFunction<Pointer<Void> Function(), Pointer<Void> Function()>('tox_new')();
-  }
-
-  void bootstrapNode(String ip, int port, String publicKey) {
-    final ipPtr = ip.toNativeUtf8();
-    final keyPtr = Uint8List.fromList(HEX.decode(publicKey)).allocatePointer();
-
-    _toxLib.lookupFunction<
-      Void Function(Pointer<Void>, Pointer<Char>, Uint16, Pointer<Uint8>),
-      void Function(Pointer<Void>, Pointer<Char>, int, Pointer<Uint8>)
-    >('tox_bootstrap')(_toxPointer, ipPtr, port, keyPtr);
-
-    calloc.free(ipPtr);
-    calloc.free(keyPtr);
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    
+    _tox = toxLib.lookupFunction<Pointer<Void> Function(), Pointer<Void> Function()>(
+      'tox_new'
+    )();
+    
+    _isInitialized = true;
   }
 
   int sendMessage(String contactId, String message) {
+    if (!_isInitialized) throw Exception('Tox not initialized');
+    
     final msgPtr = message.toNativeUtf8();
-    final result = _toxLib.lookupFunction<
-      Int32 Function(Pointer<Void>, Pointer<Char>, Pointer<Uint8>, Uint32),
-      int Function(Pointer<Void>, Pointer<Char>, Pointer<Uint8>, int)
-    >('tox_send_message')(_toxPointer, contactId.toNativeUtf8(), msgPtr.cast(), message.length);
-
-    calloc.free(msgPtr);
-    return result;
+    final contactPtr = contactId.toNativeUtf8();
+    
+    try {
+      return toxLib.lookupFunction<
+        Int32 Function(Pointer<Void>, Pointer<Char>, Pointer<Uint8>, Uint32),
+        int Function(Pointer<Void>, Pointer<Char>, Pointer<Uint8>, int)
+      >('tox_send_message')(_tox, contactPtr, msgPtr.cast(), message.length);
+    } finally {
+      calloc.free(msgPtr);
+      calloc.free(contactPtr);
+    }
   }
 
   void dispose() {
-    _toxLib.lookupFunction<Void Function(Pointer<Void>), void Function(Pointer<Void>)>('tox_kill')(_toxPointer);
+    if (_isInitialized) {
+      toxLib.lookupFunction<Void Function(Pointer<Void>), void Function(Pointer<Void>)>(
+        'tox_kill'
+      )(_tox);
+    }
   }
 }
