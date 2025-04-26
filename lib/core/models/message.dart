@@ -3,7 +3,6 @@ class Message {
   final String text;
   final DateTime timestamp;
   final bool isOutgoing;
-  final String? senderId;
   final MessageStatus status;
 
   const Message({
@@ -11,7 +10,6 @@ class Message {
     required this.text,
     required this.timestamp,
     this.isOutgoing = false,
-    this.senderId,
     this.status = MessageStatus.sent,
   });
 
@@ -21,8 +19,7 @@ class Message {
       text: map['text'] as String,
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       isOutgoing: map['is_outgoing'] as bool? ?? false,
-      senderId: map['sender_id'] as String?,
-      status: MessageStatus.values[map['status'] as int? ?? 0],
+      status: MessageStatus.values[(map['status'] as int? ?? 0)],
     );
   }
 
@@ -32,7 +29,6 @@ class Message {
       'text': text,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'is_outgoing': isOutgoing,
-      'sender_id': senderId,
       'status': status.index,
     };
   }
