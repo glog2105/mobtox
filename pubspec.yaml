@@ -1,0 +1,40 @@
+name: mobtox
+description: A modern Tox client with privacy focus
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.5
+  provider: ^6.0.5
+  sqflite: ^2.2.0
+  path_provider: ^2.0.15
+  ffi: ^2.0.1
+  file_picker: ^6.1.1
+  hex: ^0.2.0
+  intl: ^0.18.1
+  flutter_local_notifications: ^15.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/nodes.txt
+
+  # Для FFI (Tox core)
+  plugin:
+    platforms:
+      android:
+        package: com.example.mobtox
+        pluginClass: ToxPlugin
+      ios:
+        pluginClass: ToxPlugin
