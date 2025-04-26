@@ -13,6 +13,18 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+packaging {
+    jniLibs {
+        pickFirsts += setOf(
+            "lib/armeabi-v7a/libtox.so",
+            "lib/arm64-v8a/libtox.so"
+        )
+    }
+    resources.excludes += setOf(
+        "META-INF/AL2.0",
+        "META-INF/LGPL2.1"
+    )
+}
     }
 
     kotlinOptions {
